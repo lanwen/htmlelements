@@ -1,17 +1,21 @@
 package ru.yandex.qatools.htmlelements.loader;
 
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.getElementName;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isHtmlElement;
+
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.pagefactory.ElementLocator;
+
 import ru.yandex.qatools.htmlelements.element.HtmlElement;
-import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementClassAnnotationsHandler;
+import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementAnnotationsHandlerFactory;
 import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementDecorator;
 import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementFactory;
-import ru.yandex.qatools.htmlelements.pagefactory.DefaultElementLocator;
-
-import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.getElementName;
-import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isHtmlElement;
+import ru.yandex.qatools.htmlelements.pagefactory.AjaxElementLocator;
+import ru.yandex.qatools.htmlelements.pagefactory.AjaxElementLocatorFactory;
+import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandler;
+import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandlerFactory;
 
 /**
  * Contains methods for blocks of elements initialization and page objects initialization.
@@ -141,12 +145,18 @@ public class HtmlElementLoader {
      * @param driver      The {@code WebDriver} instance that will be used to look up the elements.
      */
     public static void populateHtmlElement(HtmlElement htmlElement, WebDriver driver) {
+    	populateHtmlElement(htmlElement, new HtmlElementAnnotationsHandlerFactory(), driver);
+    }
+    
+    public static void populateHtmlElement(HtmlElement htmlElement, 
+    		AnnotationsHandlerFactory annotationsHandlerFactory, WebDriver driver) {
+    	
         @SuppressWarnings("unchecked")
         Class<HtmlElement> htmlElementClass = (Class<HtmlElement>) htmlElement.getClass();
         // Create locator that will handle Block annotation
-        HtmlElementClassAnnotationsHandler<HtmlElement> annotations =
-                new HtmlElementClassAnnotationsHandler<HtmlElement>(htmlElementClass);
-        ElementLocator locator = new DefaultElementLocator(driver, annotations);
+        AnnotationsHandler annotations =
+                annotationsHandlerFactory.getAnnotationsHandler(htmlElementClass);
+        ElementLocator locator = new AjaxElementLocator(driver, annotations);
         ClassLoader htmlElementClassLoader = htmlElement.getClass().getClassLoader();
         // Initialize block with WebElement proxy and set its name
         WebElement elementToWrap = HtmlElementFactory.createProxyForWebElement(htmlElementClassLoader, locator);
@@ -154,7 +164,7 @@ public class HtmlElementLoader {
         String elementName = getElementName(htmlElementClass);
         htmlElement.setName(elementName);
         // Initialize elements of the block
-        PageFactory.initElements(new HtmlElementDecorator(elementToWrap), htmlElement);
+        PageFactory.initElements(new HtmlElementDecorator(elementToWrap), htmlElement);    	
     }
 
     /**

@@ -1,17 +1,29 @@
 package ru.yandex.qatools.htmlelements.loader.decorator;
 
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.getElementName;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.getGenericParameterClass;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.hasBlockAnnotation;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.hasFindByAnnotation;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.hasFindBysAnnotation;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isHtmlElement;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isHtmlElementList;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isTypifiedElement;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isTypifiedElementList;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isWebElement;
+import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.isWebElementList;
+
+import java.lang.reflect.Field;
+import java.util.List;
+
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.pagefactory.DefaultFieldDecorator;
 import org.openqa.selenium.support.pagefactory.ElementLocator;
+
 import ru.yandex.qatools.htmlelements.element.HtmlElement;
 import ru.yandex.qatools.htmlelements.element.TypifiedElement;
-
-import java.lang.reflect.Field;
-import java.util.List;
-
-import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.*;
+import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandlerFactory;
 
 /**
  * Decorator which is used to decorate fields of blocks and page objects.
@@ -37,9 +49,12 @@ import static ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementUtils.*
  *         Date: 13.08.12
  */
 public class HtmlElementDecorator extends DefaultFieldDecorator {
-
-    public HtmlElementDecorator(SearchContext searchContext) {
-        super(new HtmlElementLocatorFactory(searchContext));
+	public HtmlElementDecorator(SearchContext searchContext) {
+		this(searchContext, new HtmlElementAnnotationsHandlerFactory());
+	}
+	
+    public HtmlElementDecorator(SearchContext searchContext, AnnotationsHandlerFactory annotationsHandlerFactory) {
+        super(new HtmlElementLocatorFactory(searchContext, annotationsHandlerFactory));
     }
 
     @Override
@@ -114,15 +129,20 @@ public class HtmlElementDecorator extends DefaultFieldDecorator {
     }
 
     private <T extends HtmlElement> T decorateHtmlElement(Class<T> elementClass, ClassLoader loader,
-                                                          ElementLocator locator, String elementName) {
-        // Create block and initialize it with WebElement proxy
+            ElementLocator locator, AnnotationsHandlerFactory annotationsHandlerFactory, String elementName) {
+    	// Create block and initialize it with WebElement proxy
         WebElement elementToWrap = HtmlElementFactory.createProxyForWebElement(loader, locator);
         T htmlElementInstance = HtmlElementFactory.createHtmlElementInstance(elementClass);
         htmlElementInstance.setWrappedElement(elementToWrap);
         htmlElementInstance.setName(elementName);
         // Recursively initialize elements of the block
-        PageFactory.initElements(new HtmlElementDecorator(elementToWrap), htmlElementInstance);
+        PageFactory.initElements(new HtmlElementDecorator(elementToWrap, annotationsHandlerFactory), htmlElementInstance);
         return htmlElementInstance;
+    }
+    
+    private <T extends HtmlElement> T decorateHtmlElement(Class<T> elementClass, ClassLoader loader,
+                                                          ElementLocator locator, String elementName) {
+    	return decorateHtmlElement(elementClass, loader, locator, new HtmlElementAnnotationsHandlerFactory(), elementName);
     }
 
     private WebElement decorateWebElement(ClassLoader loader, ElementLocator locator, String elementName) {
