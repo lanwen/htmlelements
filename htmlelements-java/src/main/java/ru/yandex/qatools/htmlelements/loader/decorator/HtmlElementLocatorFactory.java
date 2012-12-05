@@ -4,10 +4,9 @@ import java.lang.reflect.Field;
 
 import org.openqa.selenium.SearchContext;
 import org.openqa.selenium.support.pagefactory.ElementLocator;
-import org.openqa.selenium.support.pagefactory.ElementLocatorFactory;
 
 import ru.yandex.qatools.htmlelements.pagefactory.AjaxElementLocator;
-import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandlerFactory;
+import ru.yandex.qatools.htmlelements.pagefactory.CustomElementLocatorFactory;
 
 /**
  * A factory for producing locator instances.
@@ -15,13 +14,11 @@ import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandlerFactory;
  * @author Alexander Tolmachev starlight@yandex-team.ru
  *         Date: 15.08.12
  */
-public class HtmlElementLocatorFactory implements ElementLocatorFactory {
+public class HtmlElementLocatorFactory extends CustomElementLocatorFactory {
     private final SearchContext searchContext;
-    private final AnnotationsHandlerFactory annotationsHandlerFactory;
 
-    public HtmlElementLocatorFactory(SearchContext searchContext, AnnotationsHandlerFactory annotationsHandlerFactory) {
+    public HtmlElementLocatorFactory(SearchContext searchContext) {
         this.searchContext = searchContext;
-        this.annotationsHandlerFactory = annotationsHandlerFactory;
     }
 
     /**
@@ -32,6 +29,16 @@ public class HtmlElementLocatorFactory implements ElementLocatorFactory {
      */
     @Override
     public ElementLocator createLocator(Field field) {
-        return new AjaxElementLocator(searchContext, 5, annotationsHandlerFactory.getAnnotationsHandler(field));
+    	return new AjaxElementLocator(searchContext, new HtmlElementFieldAnnotationsHandler(field));
+    }
+    
+    /**
+     * Creates locator for the given field. Created locator will process {@link org.openqa.selenium.support.FindBy},
+     * {@link org.openqa.selenium.support.FindBys}, {@link ru.yandex.qatools.htmlelements.annotations.Block} and
+     * {@link org.openqa.selenium.support.CacheLookup} annotations.
+     * @param clazz Class for which locator will be created.
+     */
+    public ElementLocator createLocator(Class clazz) {
+		return new AjaxElementLocator(searchContext, new HtmlElementClassAnnotationsHandler(clazz)); 
     }
 }

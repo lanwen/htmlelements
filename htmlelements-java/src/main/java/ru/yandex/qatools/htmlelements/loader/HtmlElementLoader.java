@@ -9,13 +9,10 @@ import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.pagefactory.ElementLocator;
 
 import ru.yandex.qatools.htmlelements.element.HtmlElement;
-import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementAnnotationsHandlerFactory;
 import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementDecorator;
 import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementFactory;
-import ru.yandex.qatools.htmlelements.pagefactory.AjaxElementLocator;
-import ru.yandex.qatools.htmlelements.pagefactory.AjaxElementLocatorFactory;
-import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandler;
-import ru.yandex.qatools.htmlelements.pagefactory.AnnotationsHandlerFactory;
+import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementLocatorFactory;
+import ru.yandex.qatools.htmlelements.pagefactory.CustomElementLocatorFactory;
 
 /**
  * Contains methods for blocks of elements initialization and page objects initialization.
@@ -34,16 +31,20 @@ public class HtmlElementLoader {
      * @see #createHtmlElement(Class, org.openqa.selenium.WebDriver)
      * @see #createPageObject(Class, org.openqa.selenium.WebDriver)
      */
-    @SuppressWarnings("unchecked")
     public static <T> T create(Class<T> clazz, WebDriver driver) {
+    	return create(clazz, new HtmlElementLocatorFactory(driver));
+    }   
+
+	@SuppressWarnings("unchecked")
+	public static <T> T create(Class<T> clazz, CustomElementLocatorFactory locatorFactory) {
         if (isHtmlElement(clazz)) {
             Class<HtmlElement> htmlElementClass = (Class<HtmlElement>) clazz;
-            return (T) createHtmlElement(htmlElementClass, driver);
+            return (T) createHtmlElement(htmlElementClass, locatorFactory);
         } else {
             // Otherwise consider class as a page object class
-            return createPageObject(clazz, driver);
+            return createPageObject(clazz, locatorFactory);
         }
-    }
+	}
 
     /**
      * Initializes {@code instance} as a block of elements it is instance of {@link HtmlElement}
@@ -89,11 +90,14 @@ public class HtmlElementLoader {
      * @return Initialized instance of the specified class.
      */
     public static <T extends HtmlElement> T createHtmlElement(Class<T> clazz, WebDriver driver) {
-        T htmlElementInstance = HtmlElementFactory.createHtmlElementInstance(clazz);
-        populateHtmlElement(htmlElementInstance, driver);
-        return htmlElementInstance;
+    	return createHtmlElement(clazz, new HtmlElementLocatorFactory(driver));
     }
 
+    public static <T extends HtmlElement> T createHtmlElement(Class<T> clazz, CustomElementLocatorFactory locatorFactory) {
+        T htmlElementInstance = HtmlElementFactory.createHtmlElementInstance(clazz);
+        populateHtmlElement(htmlElementInstance, locatorFactory);
+        return htmlElementInstance;    	
+    }
 
     /**
      * Creates an instance of the given page object class and initializes its fields with lazy proxies.
@@ -117,10 +121,14 @@ public class HtmlElementLoader {
      * @return Initialized instance of the specified class.
      */
     public static <T> T createPageObject(Class<T> clazz, WebDriver driver) {
-        T page = HtmlElementFactory.createPageObjectInstance(clazz, driver);
-        populatePageObject(page, driver);
-        return page;
+        return createPageObject(clazz, new HtmlElementLocatorFactory(driver));
     }
+    
+    public static <T> T createPageObject(Class<T> clazz, CustomElementLocatorFactory locatorFactory) {
+        T page = HtmlElementFactory.createPageObjectInstance(clazz, locatorFactory);
+        populatePageObject(page, locatorFactory);
+        return page;
+    }    
 
     /**
      * Initializes fields of the given block of elements with lazy proxies.
@@ -145,18 +153,14 @@ public class HtmlElementLoader {
      * @param driver      The {@code WebDriver} instance that will be used to look up the elements.
      */
     public static void populateHtmlElement(HtmlElement htmlElement, WebDriver driver) {
-    	populateHtmlElement(htmlElement, new HtmlElementAnnotationsHandlerFactory(), driver);
+    	populateHtmlElement(htmlElement, new HtmlElementLocatorFactory(driver));
     }
     
-    public static void populateHtmlElement(HtmlElement htmlElement, 
-    		AnnotationsHandlerFactory annotationsHandlerFactory, WebDriver driver) {
-    	
+    public static void populateHtmlElement(HtmlElement htmlElement, CustomElementLocatorFactory locatorFactory) {
         @SuppressWarnings("unchecked")
         Class<HtmlElement> htmlElementClass = (Class<HtmlElement>) htmlElement.getClass();
         // Create locator that will handle Block annotation
-        AnnotationsHandler annotations =
-                annotationsHandlerFactory.getAnnotationsHandler(htmlElementClass);
-        ElementLocator locator = new AjaxElementLocator(driver, annotations);
+        ElementLocator locator = locatorFactory.createLocator(htmlElementClass);
         ClassLoader htmlElementClassLoader = htmlElement.getClass().getClassLoader();
         // Initialize block with WebElement proxy and set its name
         WebElement elementToWrap = HtmlElementFactory.createProxyForWebElement(htmlElementClassLoader, locator);
@@ -164,7 +168,7 @@ public class HtmlElementLoader {
         String elementName = getElementName(htmlElementClass);
         htmlElement.setName(elementName);
         // Initialize elements of the block
-        PageFactory.initElements(new HtmlElementDecorator(elementToWrap), htmlElement);    	
+        PageFactory.initElements(new HtmlElementDecorator(elementToWrap), htmlElement);   	
     }
 
     /**
@@ -188,6 +192,10 @@ public class HtmlElementLoader {
      * @param driver The {@code WebDriver} instance that will be used to look up the elements.
      */
     public static void populatePageObject(Object page, WebDriver driver) {
-        PageFactory.initElements(new HtmlElementDecorator(driver), page);
+        populatePageObject(page, new HtmlElementLocatorFactory(driver));
+    }
+    
+    public static void populatePageObject(Object page, CustomElementLocatorFactory locatorFactory) {
+    	PageFactory.initElements(new HtmlElementDecorator(locatorFactory), page);
     }
 }
