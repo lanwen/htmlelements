@@ -7,6 +7,7 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.PageFactory;
 import org.openqa.selenium.support.pagefactory.ElementLocator;
+import org.openqa.selenium.support.pagefactory.ElementLocatorFactory;
 
 import ru.yandex.qatools.htmlelements.element.HtmlElement;
 import ru.yandex.qatools.htmlelements.loader.decorator.HtmlElementDecorator;
@@ -35,6 +36,16 @@ public class HtmlElementLoader {
     	return create(clazz, new HtmlElementLocatorFactory(driver));
     }   
 
+    /**
+     * Creates and initializes a block of elements if the given class is {@link HtmlElement} or its successor
+     * and initializes page object otherwise using custom (@link ElementLocatorFactory)
+     *
+     * @param clazz  A class to be instantiated and initialized.
+     * @param locatorFactory The {@code ElementLocatorFactory} factory that will be used to locate the elements.
+     * @return Initialized instance of the specified class.
+     * @see #createHtmlElement(Class, ru.yandex.qatools.htmlelements.pagefactory.CustomElementLocatorFactory)
+     * @see #createPageObject(Class, CustomElementLocatorFactory)
+     */
 	@SuppressWarnings("unchecked")
 	public static <T> T create(Class<T> clazz, CustomElementLocatorFactory locatorFactory) {
         if (isHtmlElement(clazz)) {
@@ -93,6 +104,30 @@ public class HtmlElementLoader {
     	return createHtmlElement(clazz, new HtmlElementLocatorFactory(driver));
     }
 
+    /**
+     * Creates an instance of the given class representing a block of elements and initializes its fields
+     * with lazy proxies using (@link CustomElementLocatorFactory).
+     * <p/>
+     * Processes {@link ru.yandex.qatools.htmlelements.annotations.Block} annotation of the given class
+     * to set the way of locating the block itself and {@link org.openqa.selenium.support.FindBy} and
+     * {@link org.openqa.selenium.support.FindBys} annotations of its fields for setting the way
+     * of locating elements of the block.
+     * <p/>
+     * Fields to be proxied:
+     * <p/>
+     * <ul>
+     * <li>{@code WebElement}</li>
+     * <li>List of {@code WebElements}</li>
+     * <li>Block of elements ({@link HtmlElement} and its successors)</li>
+     * <li>List of blocks</li>
+     * <li>Typified element ({@link ru.yandex.qatools.htmlelements.element.TypifiedElement} successors)</li>
+     * <li>List of typified elements</li>
+     * </ul>
+     * 
+     * @param clazz A class to be instantiated and initialized.
+     * @param locatorFactory The {@code CustomElementLocatorFactory} factory that will be used to locate the elements.
+     * @return Initialized instance of the specified class.
+     */
     public static <T extends HtmlElement> T createHtmlElement(Class<T> clazz, CustomElementLocatorFactory locatorFactory) {
         T htmlElementInstance = HtmlElementFactory.createHtmlElementInstance(clazz);
         populateHtmlElement(htmlElementInstance, locatorFactory);
@@ -124,6 +159,28 @@ public class HtmlElementLoader {
         return createPageObject(clazz, new HtmlElementLocatorFactory(driver));
     }
     
+    /**
+     * Creates an instance of the given page object class and initializes its fields 
+     * with lazy proxies using custom (@link CustomElementLocatorFactory).
+     * <p/>
+     * Processes {@link org.openqa.selenium.support.FindBy} and {@link org.openqa.selenium.support.FindBys}
+     * annotations of the fields for setting the way of locating them.
+     * <p/>
+     * Fields to be proxied:
+     * <p/>
+     * <ul>
+     * <li>{@code WebElement}</li>
+     * <li>List of {@code WebElements}</li>
+     * <li>Block of elements ({@link HtmlElement} and its successors)</li>
+     * <li>List of blocks</li>
+     * <li>Typified element ({@link ru.yandex.qatools.htmlelements.element.TypifiedElement} successors)</li>
+     * <li>List of typified elements</li>
+     * </ul>
+     *
+     * @param clazz  A class to be instantiated and initialized.
+     * @param locatorFactory The {@code CustomElementLocatorFactory} factory that will be used to locate the elements.
+     * @return Initialized instance of the specified class.
+     */    
     public static <T> T createPageObject(Class<T> clazz, CustomElementLocatorFactory locatorFactory) {
         T page = HtmlElementFactory.createPageObjectInstance(clazz, locatorFactory);
         populatePageObject(page, locatorFactory);
@@ -156,6 +213,29 @@ public class HtmlElementLoader {
     	populateHtmlElement(htmlElement, new HtmlElementLocatorFactory(driver));
     }
     
+    /**
+     * Initializes fields of the given block of elements with lazy proxies
+     * using custom (@link CustomElementLocatorFactory).
+     * <p/>
+     * Processes {@link ru.yandex.qatools.htmlelements.annotations.Block} annotation of the class
+     * of the given block to set the way of locating the block itself and {@link org.openqa.selenium.support.FindBy}
+     * and {@link org.openqa.selenium.support.FindBys} annotations of its fields for setting the way
+     * of locating elements of the block.
+     * <p/>
+     * Fields to be proxied:
+     * <p/>
+     * <ul>
+     * <li>{@code WebElement}</li>
+     * <li>List of {@code WebElements}</li>
+     * <li>Block of elements ({@link HtmlElement} and its successors)</li>
+     * <li>List of blocks</li>
+     * <li>Typified element ({@link ru.yandex.qatools.htmlelements.element.TypifiedElement} successors)</li>
+     * <li>List of typified elements</li>
+     * </ul>
+     *
+     * @param htmlElement Block of elements to be initialized.
+     * @param locatorFactory The {@code CustomElementLocatorFactory} factory that will be used to locate the elements.
+     */    
     public static void populateHtmlElement(HtmlElement htmlElement, CustomElementLocatorFactory locatorFactory) {
         @SuppressWarnings("unchecked")
         Class<HtmlElement> htmlElementClass = (Class<HtmlElement>) htmlElement.getClass();
@@ -195,6 +275,27 @@ public class HtmlElementLoader {
         populatePageObject(page, new HtmlElementLocatorFactory(driver));
     }
     
+    /**
+     * Initializes fields of the given page object with lazy proxies
+     * using custom (@link CustomElementLocatorFactory).
+     * <p/>
+     * Processes {@link org.openqa.selenium.support.FindBy} and {@link org.openqa.selenium.support.FindBys}
+     * annotations of the fields for setting the way of locating them.
+     * <p/>
+     * Fields to be proxied:
+     * <p/>
+     * <ul>
+     * <li>{@code WebElement}</li>
+     * <li>List of {@code WebElements}</li>
+     * <li>Block of elements ({@link HtmlElement} and its successors)</li>
+     * <li>List of blocks</li>
+     * <li>Typified element ({@link ru.yandex.qatools.htmlelements.element.TypifiedElement} successors)</li>
+     * <li>List of typified elements</li>
+     * </ul>
+     *
+     * @param page   Page object to be initialized.
+     * @param locatorFactory The {@code CustomElementLocatorFactory} factory that will be used locate the elements.
+     */    
     public static void populatePageObject(Object page, CustomElementLocatorFactory locatorFactory) {
     	PageFactory.initElements(new HtmlElementDecorator(locatorFactory), page);
     }

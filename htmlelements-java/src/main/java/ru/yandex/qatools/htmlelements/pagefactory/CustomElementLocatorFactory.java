@@ -26,7 +26,7 @@ import org.openqa.selenium.support.pagefactory.ElementLocatorFactory;
  */
 public abstract class CustomElementLocatorFactory implements ElementLocatorFactory {
 	/**
-	 * When a field on a class needs to be decorated with an {@link ElementLocator} this method will
+	 * When a field needs to be decorated with an {@link ElementLocator} this method will
 	 * be called.
 	 * 
 	 * @param field
@@ -36,6 +36,13 @@ public abstract class CustomElementLocatorFactory implements ElementLocatorFacto
 		return null;
 	}
 	
+	/**
+	 * When a class needs to be decorated with an {@link ElementLocator} this method will
+	 * be called.
+	 * 
+	 * @param field
+	 * @return An ElementLocator object.
+	 */	
 	public ElementLocator createLocator(Class clazz) {
 		return null;
 	}
